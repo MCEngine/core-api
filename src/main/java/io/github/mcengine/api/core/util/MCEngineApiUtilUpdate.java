@@ -16,13 +16,15 @@ import java.util.logging.Logger;
  */
 public class MCEngineApiUtilUpdate {
 
-    // Label priority from most to least stable
+    /**
+     * Stability label priority from most to least stable.
+     */
     private static final List<String> LABEL_PRIORITY = List.of(
         "RELEASE",
         "SNAPSHOT",
         "ALPHA",
         "BETA"
-        );
+    );
 
     /**
      * Checks for updates for core plugins.
@@ -36,26 +38,10 @@ public class MCEngineApiUtilUpdate {
      */
     public static void checkUpdate(Plugin plugin, Logger logger,
                                    String gitPlatform, String org, String repository, String token) {
-        checkUpdate(plugin, logger, "", gitPlatform, org, repository, token);
-    }
-
-    /**
-     * Checks for updates for plugins with custom log prefix (used by AddOns or DLCs).
-     *
-     * @param plugin      Plugin instance.
-     * @param logger      Logger to output messages.
-     * @param prefix      Prefix to prepend to all logs.
-     * @param gitPlatform Git platform ("github" or "gitlab").
-     * @param org         GitHub/GitLab organization or username.
-     * @param repository  Repository name.
-     * @param token       GitHub/GitLab API token (can be null).
-     */
-    public static void checkUpdate(Plugin plugin, Logger logger, String prefix,
-                                   String gitPlatform, String org, String repository, String token) {
         switch (gitPlatform.toLowerCase()) {
-            case "github" -> checkUpdateGitHub(plugin, logger, prefix, org, repository, token);
-            case "gitlab" -> checkUpdateGitLab(plugin, logger, prefix, org, repository, token);
-            default -> logger.warning(prefix + "Unknown platform: " + gitPlatform);
+            case "github" -> checkUpdateGitHub(plugin, logger, org, repository, token);
+            case "gitlab" -> checkUpdateGitLab(plugin, logger, org, repository, token);
+            default -> logger.warning("Unknown platform: " + gitPlatform);
         }
     }
 
@@ -64,16 +50,15 @@ public class MCEngineApiUtilUpdate {
      *
      * @param plugin      Plugin instance.
      * @param logger      Logger for output.
-     * @param prefix      Prefix to prepend to logs.
      * @param org         GitHub organization or username.
      * @param repository  GitHub repository name.
      * @param githubToken GitHub API token (can be null).
      */
-    private static void checkUpdateGitHub(Plugin plugin, Logger logger, String prefix,
+    private static void checkUpdateGitHub(Plugin plugin, Logger logger,
                                           String org, String repository, String githubToken) {
         String apiUrl = String.format("https://api.github.com/repos/%s/%s/releases/latest", org, repository);
         String downloadUrl = String.format("https://github.com/%s/%s/releases", org, repository);
-        fetchAndCompareUpdate(plugin, logger, prefix, apiUrl, downloadUrl, githubToken, "application/vnd.github.v3+json", false);
+        fetchAndCompareUpdate(plugin, logger, apiUrl, downloadUrl, githubToken, "application/vnd.github.v3+json", false);
     }
 
     /**
@@ -81,16 +66,15 @@ public class MCEngineApiUtilUpdate {
      *
      * @param plugin      Plugin instance.
      * @param logger      Logger for output.
-     * @param prefix      Prefix to prepend to logs.
      * @param org         GitLab group or username.
      * @param repository  GitLab repository name.
      * @param gitlabToken GitLab API token (can be null).
      */
-    private static void checkUpdateGitLab(Plugin plugin, Logger logger, String prefix,
+    private static void checkUpdateGitLab(Plugin plugin, Logger logger,
                                           String org, String repository, String gitlabToken) {
         String apiUrl = String.format("https://gitlab.com/api/v4/projects/%s%%2F%s/releases", org, repository);
         String downloadUrl = String.format("https://gitlab.com/%s/%s/-/releases", org, repository);
-        fetchAndCompareUpdate(plugin, logger, prefix, apiUrl, downloadUrl, gitlabToken, "application/json", true);
+        fetchAndCompareUpdate(plugin, logger, apiUrl, downloadUrl, gitlabToken, "application/json", true);
     }
 
     /**
@@ -98,14 +82,13 @@ public class MCEngineApiUtilUpdate {
      *
      * @param plugin       Plugin instance.
      * @param logger       Logger for output.
-     * @param prefix       Prefix to prepend to log messages.
      * @param apiUrl       API endpoint for the latest release.
      * @param downloadUrl  Download page URL for display.
      * @param token        Optional API token.
      * @param acceptHeader Accept header value for HTTP request.
      * @param jsonArray    Whether the response is a JSON array (GitLab) or object (GitHub).
      */
-    private static void fetchAndCompareUpdate(Plugin plugin, Logger logger, String prefix,
+    private static void fetchAndCompareUpdate(Plugin plugin, Logger logger,
                                               String apiUrl, String downloadUrl,
                                               String token, String acceptHeader, boolean jsonArray) {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
@@ -123,14 +106,16 @@ public class MCEngineApiUtilUpdate {
 
                 if (jsonArray) {
                     var jsonArrayObj = JsonParser.parseReader(reader).getAsJsonArray();
-                    latestVersion = jsonArrayObj.size() > 0 ? jsonArrayObj.get(0).getAsJsonObject().get("tag_name").getAsString() : null;
+                    latestVersion = jsonArrayObj.size() > 0
+                        ? jsonArrayObj.get(0).getAsJsonObject().get("tag_name").getAsString()
+                        : null;
                 } else {
                     var jsonObject = JsonParser.parseReader(reader).getAsJsonObject();
                     latestVersion = jsonObject.get("tag_name").getAsString();
                 }
 
                 if (latestVersion == null) {
-                    logger.warning(prefix + "[UpdateCheck] Could not find release tag from API: " + apiUrl);
+                    logger.warning("[UpdateCheck] Could not find release tag from API: " + apiUrl);
                     return;
                 }
 
@@ -138,15 +123,16 @@ public class MCEngineApiUtilUpdate {
                 boolean updateAvailable = isUpdateAvailable(currentVersion, latestVersion);
 
                 if (updateAvailable) {
-                    logger.info(prefix + "new update is available!");
-                    logger.info(prefix + "Current version: " + currentVersion + " >> Latest: " + latestVersion);
-                    logger.info(prefix + "Download: " + downloadUrl);
+                    logger.info("A new update is available!");
+                    logger.info("Current version: " + currentVersion + " >> Latest: " + latestVersion);
+                    logger.info("Download: " + downloadUrl);
                 } else {
-                    logger.info(prefix + "No updates found. You are running the latest version.");
+                    logger.info("No updates found. You are running the latest version.");
                 }
 
             } catch (Exception ex) {
-                logger.warning(prefix + "[UpdateCheck] [" + (apiUrl.contains("github") ? "GitHub" : "GitLab") + "] Could not check updates: " + ex.getMessage());
+                logger.warning("[UpdateCheck] [" + (apiUrl.contains("github") ? "GitHub" : "GitLab")
+                        + "] Could not check updates: " + ex.getMessage());
             }
         });
     }
@@ -180,7 +166,14 @@ public class MCEngineApiUtilUpdate {
      * Holds parsed version number components and label rank.
      */
     private static class VersionInfo {
+        /**
+         * List of version number components.
+         */
         List<Integer> numbers = new ArrayList<>();
+
+        /**
+         * Rank of the version label based on stability.
+         */
         int labelRank = -1;
     }
 
@@ -217,7 +210,7 @@ public class MCEngineApiUtilUpdate {
     private static int getLabelRank(String label) {
         for (int i = 0; i < LABEL_PRIORITY.size(); i++) {
             if (label.equalsIgnoreCase(LABEL_PRIORITY.get(i))) {
-                return LABEL_PRIORITY.size() - 1 - i; // Higher index = more stable
+                return LABEL_PRIORITY.size() - 1 - i;
             }
         }
         return -1;
