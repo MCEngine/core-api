@@ -3,6 +3,7 @@ package io.github.mcengine.api.core.extension.dlc;
 import io.github.mcengine.api.core.util.PrefixedLogger;
 import org.bukkit.plugin.Plugin;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -11,7 +12,7 @@ import java.util.logging.Logger;
 public class MCEngineDLCLogger {
 
     /**
-     * The logger with auto-prefix for this DLC.
+     * The logger with automatic prefixing.
      */
     private final Logger logger;
 
@@ -25,9 +26,46 @@ public class MCEngineDLCLogger {
     }
 
     /**
-     * Returns the logger with automatic prefixing.
+     * Logs an informational message with the DLC prefix.
      *
-     * @return The prefixed logger.
+     * @param message The message to log.
+     */
+    public void info(String message) {
+        logger.info(message);
+    }
+
+    /**
+     * Logs a warning message with the DLC prefix.
+     *
+     * @param message The message to log.
+     */
+    public void warning(String message) {
+        logger.warning(message);
+    }
+
+    /**
+     * Logs a severe message with the DLC prefix.
+     *
+     * @param message The message to log.
+     */
+    public void severe(String message) {
+        logger.severe(message);
+    }
+
+    /**
+     * Logs a message with the specified level and DLC prefix.
+     *
+     * @param level   The log level.
+     * @param message The message to log.
+     */
+    public void log(Level level, String message) {
+        logger.log(level, message);
+    }
+
+    /**
+     * Returns the wrapped prefixed logger.
+     *
+     * @return the underlying logger with automatic prefixing.
      */
     public Logger getLogger() {
         return logger;
